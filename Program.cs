@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Windows.Forms;
 
 namespace imgs2pdf
@@ -30,11 +31,21 @@ namespace imgs2pdf
             else
             {
                 var frags = args[0].Remove(0, "imgs2pdf:".Length).Split('|');
+                string[] imgs;
+                try
+                {
+                    var wc = new WebClient();
+                    wc.Headers["Cookie"] = frags[3];
+                    imgs = Newtonsoft.Json.Linq.JArray.Parse(wc.DownloadString(Uri.UnescapeDataString(frags[2]))).Select(token => token.ToString()).ToArray();
+                }catch
+                {
+                    imgs = args.Skip(2).ToArray();
+                }
                 var mainForm = new MainForm()
                 {
-                    Filename = frags[0],
+                    Filename = Uri.UnescapeDataString(frags[0]),
                     DPI = Convert.ToInt32(frags[1]),
-                    Imgs = frags.Skip(2).ToArray()
+                    Imgs = imgs
                 };
                 Application.Run(mainForm);
             }
