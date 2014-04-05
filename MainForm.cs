@@ -20,19 +20,27 @@ namespace imgs2pdf
         public int DPI;
         public string Filename;
         private Process process;
+        public string ImgListFilename;
 
         private void MainForm_Load(object sender, EventArgs e)
         {
             var args = "-density " + this.DPI + " ";
-            foreach (var img in this.Imgs)
+            if (this.Imgs != null)
             {
-                args += img + " ";
+                foreach (var img in this.Imgs)
+                {
+                    args += img + " ";
+                }
+            }
+            else
+            {
+                args += "\"@" + this.ImgListFilename + "\" ";
             }
             this.saveFileDialog1.FileName = this.Filename;
             DialogResult result;
             if ((result =this.saveFileDialog1.ShowDialog()) == DialogResult.OK)
             {
-                this.Text = "Converting " + this.Imgs.Length + " images to " + this.saveFileDialog1.FileName + " ...";
+                this.Text = "Converting " + this.Filename + "...";
                 args += "\"" + this.saveFileDialog1.FileName + "\""; 
                 this.Activate();
                 this.process = new Process();

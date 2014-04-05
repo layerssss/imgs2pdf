@@ -31,21 +31,25 @@ namespace imgs2pdf
             else
             {
                 var frags = args[0].Remove(0, "imgs2pdf:".Length).Split('|');
-                string[] imgs;
-                try
+                string[] imgs = null;
+                var filename = Uri.UnescapeDataString(frags[0]);
+                var imgListFilename = Application.ExecutablePath +filename + ".txt";
+                if (frags[2] == "url")
                 {
                     var wc = new WebClient();
-                    wc.Headers["Cookie"] = frags[3];
-                    imgs = Newtonsoft.Json.Linq.JArray.Parse(wc.DownloadString(Uri.UnescapeDataString(frags[2]))).Select(token => token.ToString()).ToArray();
-                }catch
+                    wc.Headers["Cookie"] = frags[4];
+                    wc.DownloadFile(Uri.UnescapeDataString(frags[3]), imgListFilename);
+                }
+                else
                 {
-                    imgs = args.Skip(2).ToArray();
+                    imgs = frags.Skip(2).ToArray();
                 }
                 var mainForm = new MainForm()
                 {
-                    Filename = Uri.UnescapeDataString(frags[0]),
+                    Filename = filename,
                     DPI = Convert.ToInt32(frags[1]),
-                    Imgs = imgs
+                    Imgs = imgs,
+                    ImgListFilename= imgListFilename
                 };
                 Application.Run(mainForm);
             }
