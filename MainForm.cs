@@ -24,7 +24,8 @@ namespace imgs2pdf
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            var args = "-density " + this.DPI + " ";
+            var args = "-verbose -density " + this.DPI + " ";
+            var convertBin = Application.ExecutablePath.Substring(0, Application.ExecutablePath.LastIndexOf('\\')) + "\\convert.exe";
             if (this.Imgs != null)
             {
                 foreach (var img in this.Imgs)
@@ -44,18 +45,33 @@ namespace imgs2pdf
                 args += "\"" + this.saveFileDialog1.FileName + "\""; 
                 this.Activate();
                 this.process = new Process();
-                this.process.StartInfo = new ProcessStartInfo(Application.ExecutablePath.Substring(0, Application.ExecutablePath.LastIndexOf('\\')) + "\\convert.exe", args);
+                this.process.StartInfo = new ProcessStartInfo(convertBin, args);
                 this.process.StartInfo.UseShellExecute = false;
                 this.process.StartInfo.CreateNoWindow = true;
                 this.process.StartInfo.RedirectStandardError = true;
+                this.process.StartInfo.RedirectStandardOutput = true;
                 this.process.EnableRaisingEvents = true;
                 this.process.Exited += new EventHandler(this.process_Exited);
+                this.process.ErrorDataReceived += process_ErrorDataReceived;
+                this.process.OutputDataReceived += process_OutputDataReceived;
+                this.textBox1.Text += "\"" + convertBin + "\" " + args + "\r\nss";
                 this.process.Start();
+
             }
             else {
                 this.DialogResult = result;
                 this.Close();
             }
+        }
+
+        void process_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            this.textBox1.Text += e.Data;
+        }
+
+        void process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            this.textBox1.Text += e.Data;
         }
 
         void process_Exited(object sender, EventArgs e)
@@ -67,7 +83,7 @@ namespace imgs2pdf
             }
             else
             {
-                MessageBox.Show(this.process.StandardError.ReadToEnd(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this.textBox1.Text, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.DialogResult = DialogResult.Abort;
             }
             this.Close();
