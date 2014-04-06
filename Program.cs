@@ -33,12 +33,11 @@ namespace imgs2pdf
                 var frags = args[0].Remove(0, "imgs2pdf:".Length).Split('|');
                 string[] imgs = null;
                 var filename = Uri.UnescapeDataString(frags[0]);
-                var imgListFilename = Application.ExecutablePath +filename + ".txt";
                 if (frags[2] == "url")
                 {
                     var wc = new WebClient();
                     wc.Headers["Cookie"] = frags[4];
-                    wc.DownloadFile(Uri.UnescapeDataString(frags[3]), imgListFilename);
+                    imgs = wc.DownloadString(Uri.UnescapeDataString(frags[3])).Split(new []{"\r\n"},StringSplitOptions.RemoveEmptyEntries);
                 }
                 else
                 {
@@ -48,8 +47,7 @@ namespace imgs2pdf
                 {
                     Filename = filename,
                     DPI = Convert.ToInt32(frags[1]),
-                    Imgs = imgs,
-                    ImgListFilename= imgListFilename
+                    Imgs = imgs
                 };
                 Application.Run(mainForm);
             }

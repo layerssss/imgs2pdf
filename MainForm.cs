@@ -21,17 +21,12 @@ namespace imgs2pdf
         public string[] Imgs;
         public int DPI;
         public string Filename;
-        public string ImgListFilename;
         Thread thread;
         Exception ex;
         int processed = 0;
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            if (this.Imgs == null)
-            {
-                this.Imgs = System.IO.File.ReadAllLines(this.ImgListFilename);
-            }
             this.progressBar1.Maximum = this.Imgs.Length;
             var convertBin = Application.ExecutablePath.Substring(0, Application.ExecutablePath.LastIndexOf('\\')) + "\\convert.exe";
             this.saveFileDialog1.FileName = this.Filename;
