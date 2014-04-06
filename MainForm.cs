@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Diagnostics;
+using System.Threading;
+using ImageMagick;
 
 namespace imgs2pdf
 {
@@ -19,44 +21,27 @@ namespace imgs2pdf
         public string[] Imgs;
         public int DPI;
         public string Filename;
-        private Process process;
         public string ImgListFilename;
+        Thread thread;
+        Exception ex;
+        int processed = 0;
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            var args = "-verbose -density " + this.DPI + " ";
+            if (this.Imgs == null)
+            {
+                this.Imgs = System.IO.File.ReadAllLines(this.ImgListFilename);
+            }
+            this.progressBar1.Maximum = this.Imgs.Length;
             var convertBin = Application.ExecutablePath.Substring(0, Application.ExecutablePath.LastIndexOf('\\')) + "\\convert.exe";
-            if (this.Imgs != null)
-            {
-                foreach (var img in this.Imgs)
-                {
-                    args += img + " ";
-                }
-            }
-            else
-            {
-                args += "\"@" + this.ImgListFilename + "\" ";
-            }
             this.saveFileDialog1.FileName = this.Filename;
             DialogResult result;
             if ((result =this.saveFileDialog1.ShowDialog()) == DialogResult.OK)
             {
                 this.Text = "Converting " + this.Filename + "...";
-                args += "\"" + this.saveFileDialog1.FileName + "\""; 
                 this.Activate();
-                this.process = new Process();
-                this.process.StartInfo = new ProcessStartInfo(convertBin, args);
-                this.process.StartInfo.UseShellExecute = false;
-                this.process.StartInfo.CreateNoWindow = true;
-                this.process.StartInfo.RedirectStandardError = true;
-                this.process.StartInfo.RedirectStandardOutput = true;
-                this.process.EnableRaisingEvents = true;
-                this.process.Exited += new EventHandler(this.process_Exited);
-                this.process.ErrorDataReceived += process_ErrorDataReceived;
-                this.process.OutputDataReceived += process_OutputDataReceived;
-                this.textBox1.Text += "\"" + convertBin + "\" " + args + "\r\nss";
-                this.process.Start();
-
+                this.thread = new Thread(this.threadStart);
+                this.thread.Start();
             }
             else {
                 this.DialogResult = result;
@@ -64,38 +49,68 @@ namespace imgs2pdf
             }
         }
 
-        void process_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        void threadStart()
         {
-            this.textBox1.Text += e.Data;
-        }
-
-        void process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            this.textBox1.Text += e.Data;
-        }
-
-        void process_Exited(object sender, EventArgs e)
-        {
-            if (this.process.ExitCode == 0)
+            try
             {
-                MessageBox.Show("PDF Saved to " + this.saveFileDialog1.FileName, "imgs2pdf", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.DialogResult = DialogResult.OK;
+                using (var image = new MagickImageCollection())
+                {
+                    foreach (var img in this.Imgs)
+                    {
+                        var mimg = new MagickImage(img);
+                        mimg.Density = new MagickGeometry(300, 300);
+                        image.Add(mimg);
+                        this.processed += 1;
+                    }
+                    image.Write(this.saveFileDialog1.FileName);
+                }
             }
-            else
+            catch (Exception e)
             {
-                MessageBox.Show(this.textBox1.Text, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                this.DialogResult = DialogResult.Abort;
+                this.ex = e;
             }
-            this.Close();
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             try
             {
-                this.process.Kill();
+                this.thread.Abort();
             }
             catch { }
+            this.timer1.Stop();
+            if (this.ex == null)
+            {
+                this.DialogResult = DialogResult.OK;
+                MessageBox.Show("Saved to " + this.saveFileDialog1.FileName, "imgs2pdf", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                this.DialogResult = DialogResult.Cancel;
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            this.progressBar1.Value = this.processed;
+            if (this.processed == this.Imgs.Length)
+            {
+                this.progressBar1.Style = ProgressBarStyle.Marquee;
+            }
+            else
+            {
+                this.progressBar1.Style = ProgressBarStyle.Continuous;
+            }
+            if (this.thread != null && !this.thread.IsAlive)
+            {
+                this.Close();
+            }
+        }
+
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+        }
+
     }
 }
