@@ -73,17 +73,6 @@ namespace imgs2pdf
                 this.thread.Abort();
             }
             catch { }
-            this.timer1.Stop();
-            if (this.ex == null)
-            {
-                this.DialogResult = DialogResult.OK;
-                MessageBox.Show("Saved to " + this.saveFileDialog1.FileName, "imgs2pdf", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                this.DialogResult = DialogResult.Cancel;
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -99,6 +88,17 @@ namespace imgs2pdf
             }
             if (this.thread != null && !this.thread.IsAlive)
             {
+                this.timer1.Stop();
+                if (this.ex == null)
+                {
+                    this.DialogResult = DialogResult.OK;
+                    MessageBox.Show("Saved to " + this.saveFileDialog1.FileName, "imgs2pdf", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    this.DialogResult = DialogResult.Cancel;
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
                 this.Close();
             }
         }
